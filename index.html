@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Organigramme aus Firmenbeschreibungen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1b1930;--ink-soft:#4a4766;--muted:#7d7a94;
+    --paper:#f6f7fb;--card:#ffffff;--line:#c9ccdd;--line-strong:#9aa0bd;
+    --gl-bg:#f1efe8;--gl-bd:#8a887f;--gl-tx:#44433f;
+    --inst-bg:#faeeda;--inst-bd:#ba7517;--inst-tx:#633806;
+    --abt-bg:#eeedfd;--abt-bd:#5848c9;--abt-tx:#362a8f;
+    --stel-bg:#e2f5ee;--stel-bd:#0e8e6e;--stel-tx:#0a5f4a;
+    --spa-bg:#eeedfd;--spa-bd:#5848c9;--spa-tx:#362a8f;
+    --accent:#5848c9;--ok:#0e8e6e;--ok-bg:#e2f5ee;--bad:#c23b4b;--bad-bg:#fcebed;
+    --sans:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    --disp:'Space Grotesk',var(--sans);--r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px}
+  h1,h2,h3{font-family:var(--disp);font-weight:600;letter-spacing:-.01em;margin:0}
+  a{color:var(--accent)}
+  header.hero{padding:56px 0 28px}
+  .hero .kicker{font-family:var(--disp);font-weight:500;color:var(--muted);font-size:15px;margin:0 0 12px}
+  .hero h1{font-size:clamp(28px,4.6vw,44px);font-weight:700;line-height:1.12}
+  .hero .sub{font-size:18px;color:var(--ink-soft);max-width:65ch;margin-top:14px}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:10px 20px;margin:22px 0 0;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+  .legend .it{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-soft)}
+  .swatch{width:20px;height:16px;border-radius:4px;border:1.5px solid}
+  .sw-gl{background:var(--gl-bg);border-color:var(--gl-bd)}
+  .sw-inst{background:var(--inst-bg);border-color:var(--inst-bd)}
+  .sw-abt{background:var(--abt-bg);border-color:var(--abt-bd)}
+  .sw-stel{background:var(--stel-bg);border-color:var(--stel-bd)}
+
+  section.ex{padding:34px 0;border-top:1px solid var(--line)}
+  .eyebrow{font-family:var(--disp);font-weight:600;color:var(--accent);font-size:14px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  .pill{font:600 12px var(--sans);padding:3px 10px;border-radius:999px;background:var(--abt-bg);color:var(--abt-tx)}
+  .pill.div{background:var(--stel-bg);color:var(--stel-tx)}
+  h2{font-size:clamp(21px,3vw,27px)}
+  .desc{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin:14px 0 18px;font-size:15.5px;color:var(--ink-soft)}
+  .task{font-size:15.5px;color:var(--ink);margin:0 0 14px}
+  .task b{font-weight:600}
+
+  .pool{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+  .chip{font:600 14px var(--sans);background:var(--abt-bg);color:var(--abt-tx);border:1.5px solid transparent;padding:8px 14px;border-radius:10px;cursor:grab;user-select:none;transition:transform .08s,opacity .15s,box-shadow .15s}
+  .chip:active{transform:scale(.97)}
+  .chip.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--abt-bg)}
+  .chip.used{opacity:.25;pointer-events:none}
+
+  .boardwrap{overflow-x:auto;padding:4px 0 8px;-webkit-overflow-scrolling:touch}
+  .board{position:relative;margin:0 auto}
+  .board svg.conn{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .node{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:9px;font-weight:600;font-size:13px;padding:4px 8px;line-height:1.2}
+  .node.fixed{background:var(--gl-bg);border:1.5px solid var(--gl-bd);color:var(--gl-tx)}
+  .node.fixed.lvl-sparte{} /* fixed only used for GL/function here */
+  .node.func{background:#fff;border:1.5px dashed var(--spa-bd);color:var(--spa-tx);font-size:11.5px}
+  .slot{background:var(--card);border:1.5px dashed var(--line-strong);color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+  .slot.over{border-color:var(--accent);background:var(--abt-bg)}
+  .slot.filled{border-style:solid}
+  .slot.ok.lvl-instanz{background:var(--inst-bg);border-color:var(--inst-bd);color:var(--inst-tx)}
+  .slot.ok.lvl-abteilung{background:var(--abt-bg);border-color:var(--abt-bd);color:var(--abt-tx)}
+  .slot.ok.lvl-stelle{background:var(--stel-bg);border-color:var(--stel-bd);color:var(--stel-tx)}
+  .slot.ok.lvl-sparte{background:var(--spa-bg);border-color:var(--spa-bd);color:var(--spa-tx)}
+  .slot.ok.lvl-verwaltung{background:var(--gl-bg);border-color:var(--gl-bd);color:var(--gl-tx)}
+  .slot.bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .btn{font:600 15px var(--disp);border:0;border-radius:10px;padding:10px 18px;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line-strong)}
+  .btn:active{transform:translateY(1px)}
+  .fb{font-size:14.5px;margin-top:12px;min-height:1.2em;color:var(--ink-soft)}
+  .fb.ok{color:var(--stel-tx)} .fb.no{color:var(--bad)}
+
+  footer{padding:28px 0 60px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:10px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Wirtschaftsinformatik · Jahrgangsstufe 10</p>
+    <h1>Organigramme aus Firmenbeschreibungen</h1>
+    <p class="sub">Lies jede Beschreibung und baue das Organigramm: Ziehe die Begriffe in die passenden Kästen – oder tippe erst einen Begriff und dann einen Kasten. Farbe = Ebene. Mit „Prüfen“ bekommst du sofort Rückmeldung.</p>
+    <div class="legend" aria-label="Legende der Ebenen">
+      <span class="it"><span class="swatch sw-gl"></span>Geschäftsleitung</span>
+      <span class="it"><span class="swatch sw-inst"></span>Instanz (Leitung)</span>
+      <span class="it"><span class="swatch sw-abt"></span>Abteilung / Sparte</span>
+      <span class="it"><span class="swatch sw-stel"></span>Stelle</span>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="main"></main>
+<footer><div class="wrap">Unterrichtsmaterial Wirtschaftsinformatik · Organigramme aus Firmenbeschreibungen · Einliniensystem &amp; divisional</div></footer>
+
+<script>
+const EX=[
+ {id:"e1",title:"Stadtbäckerei Kornblume GmbH",tag:"Einliniensystem",div:false,
+  desc:"Familienbetrieb mit rund 40 Beschäftigten. An der Spitze steht Geschäftsführerin Frau Kornblume. Ihr unterstellt sind die Abteilungen Backstube, Verkauf und Verwaltung. Backstube: Stellen Brotbäcker und Konditor. Verkauf: Filiale Marktplatz und Filiale Bahnhof. Verwaltung: Buchhaltung.",
+  W:820,H:238,
+  nodes:[
+   {id:"gl",cx:410,y:8,w:200,h:44,lvl:"gl",label:"Geschäftsführung",fixed:true},
+   {id:"ab1",cx:150,y:92,w:160,h:40,lvl:"abteilung",correct:"Backstube",group:"gl"},
+   {id:"ab2",cx:410,y:92,w:160,h:40,lvl:"abteilung",correct:"Verkauf",group:"gl"},
+   {id:"ab3",cx:670,y:92,w:160,h:40,lvl:"abteilung",correct:"Verwaltung",group:"gl"},
+   {id:"s1",cx:88,y:174,w:120,h:38,lvl:"stelle",correct:"Brotbäcker",group:"ab1"},
+   {id:"s2",cx:214,y:174,w:120,h:38,lvl:"stelle",correct:"Konditor",group:"ab1"},
+   {id:"s3",cx:345,y:174,w:134,h:38,lvl:"stelle",correct:"Filiale Marktplatz",group:"ab2"},
+   {id:"s4",cx:480,y:174,w:134,h:38,lvl:"stelle",correct:"Filiale Bahnhof",group:"ab2"},
+   {id:"s5",cx:670,y:174,w:134,h:38,lvl:"stelle",correct:"Buchhaltung",group:"ab3"},
+  ],
+  edges:[["gl","ab1"],["gl","ab2"],["gl","ab3"],["ab1","s1"],["ab1","s2"],["ab2","s3"],["ab2","s4"],["ab3","s5"]]},
+
+ {id:"e2",title:"TechnoMess GmbH",tag:"Einliniensystem · 4 Ebenen",div:false,
+  desc:"Hersteller von Messgeräten, ~300 Beschäftigte. An der Spitze die Geschäftsführung. Ihr unterstellt sind zwei Bereichsleiter (Instanzen): der Technische Leiter und der Kaufmännische Leiter. Technischer Leiter → Abteilungen Entwicklung und Fertigung. Kaufmännischer Leiter → Abteilungen Einkauf und Vertrieb. Stellen: Konstrukteur (Entwicklung), Monteur (Fertigung), Sachbearbeiter Einkauf (Einkauf), Außendienst (Vertrieb).",
+  W:980,H:312,
+  nodes:[
+   {id:"gl",cx:490,y:8,w:200,h:44,lvl:"gl",label:"Geschäftsführung",fixed:true},
+   {id:"in1",cx:270,y:90,w:200,h:42,lvl:"instanz",correct:"Technischer Leiter",group:"gl"},
+   {id:"in2",cx:710,y:90,w:200,h:42,lvl:"instanz",correct:"Kaufmännischer Leiter",group:"gl"},
+   {id:"ab1",cx:150,y:168,w:150,h:40,lvl:"abteilung",correct:"Entwicklung",group:"in1"},
+   {id:"ab2",cx:390,y:168,w:150,h:40,lvl:"abteilung",correct:"Fertigung",group:"in1"},
+   {id:"ab3",cx:590,y:168,w:150,h:40,lvl:"abteilung",correct:"Einkauf",group:"in2"},
+   {id:"ab4",cx:830,y:168,w:150,h:40,lvl:"abteilung",correct:"Vertrieb",group:"in2"},
+   {id:"s1",cx:150,y:248,w:158,h:38,lvl:"stelle",correct:"Konstrukteur",group:"ab1"},
+   {id:"s2",cx:390,y:248,w:158,h:38,lvl:"stelle",correct:"Monteur",group:"ab2"},
+   {id:"s3",cx:590,y:248,w:158,h:38,lvl:"stelle",correct:"Sachbearbeiter Einkauf",group:"ab3"},
+   {id:"s4",cx:830,y:248,w:158,h:38,lvl:"stelle",correct:"Außendienst",group:"ab4"},
+  ],
+  edges:[["gl","in1"],["gl","in2"],["in1","ab1"],["in1","ab2"],["in2","ab3"],["in2","ab4"],["ab1","s1"],["ab2","s2"],["ab3","s3"],["ab4","s4"]]},
+
+ {id:"e3",title:"Hotel Seeblick",tag:"Einliniensystem",div:false,
+  desc:"Das Hotel Seeblick wird von einer Hoteldirektorin geleitet. Ihr unterstellt sind drei Abteilungsleitungen (Instanzen): Leitung Empfang, Küchenchef und Leitung Housekeeping. Empfang: Stellen Rezeptionist und Nachtportier. Küche: Koch und Küchenhilfe. Housekeeping: Zimmerservice und Wäscherei.",
+  W:880,H:238,
+  nodes:[
+   {id:"gl",cx:440,y:8,w:200,h:44,lvl:"gl",label:"Hoteldirektion",fixed:true},
+   {id:"in1",cx:150,y:92,w:188,h:42,lvl:"instanz",correct:"Leitung Empfang",group:"gl"},
+   {id:"in2",cx:440,y:92,w:188,h:42,lvl:"instanz",correct:"Küchenchef",group:"gl"},
+   {id:"in3",cx:730,y:92,w:188,h:42,lvl:"instanz",correct:"Leitung Housekeeping",group:"gl"},
+   {id:"s1",cx:85,y:174,w:120,h:38,lvl:"stelle",correct:"Rezeptionist",group:"in1"},
+   {id:"s2",cx:215,y:174,w:120,h:38,lvl:"stelle",correct:"Nachtportier",group:"in1"},
+   {id:"s3",cx:375,y:174,w:120,h:38,lvl:"stelle",correct:"Koch",group:"in2"},
+   {id:"s4",cx:505,y:174,w:120,h:38,lvl:"stelle",correct:"Küchenhilfe",group:"in2"},
+   {id:"s5",cx:665,y:174,w:120,h:38,lvl:"stelle",correct:"Zimmerservice",group:"in3"},
+   {id:"s6",cx:795,y:174,w:120,h:38,lvl:"stelle",correct:"Wäscherei",group:"in3"},
+  ],
+  edges:[["gl","in1"],["gl","in2"],["gl","in3"],["in1","s1"],["in1","s2"],["in2","s3"],["in2","s4"],["in3","s5"],["in3","s6"]]},
+
+ {id:"e4",title:"GrünGarten AG",tag:"divisionale Aufbauorganisation",div:true,
+  desc:"Großes Unternehmen für Gartenbedarf. An der Spitze der Vorstand. Gegliedert in drei Sparten: Gartenmöbel, Pflanzen und Werkzeuge. Jede Sparte hat eigenen Einkauf, eigene Produktion und eigenen Vertrieb. Die Verwaltung wird zentral für das ganze Unternehmen geführt.",
+  W:1000,H:238,
+  nodes:[
+   {id:"gl",cx:500,y:8,w:210,h:44,lvl:"gl",label:"Vorstand",fixed:true},
+   {id:"v",cx:130,y:92,w:160,h:42,lvl:"verwaltung",correct:"Verwaltung",group:"gl"},
+   {id:"sp1",cx:400,y:92,w:176,h:42,lvl:"sparte",correct:"Sparte Gartenmöbel",group:"gl"},
+   {id:"sp2",cx:620,y:92,w:176,h:42,lvl:"sparte",correct:"Sparte Pflanzen",group:"gl"},
+   {id:"sp3",cx:840,y:92,w:176,h:42,lvl:"sparte",correct:"Sparte Werkzeuge",group:"gl"},
+   {id:"f1",cx:400,y:174,w:176,h:42,lvl:"func",label:"Einkauf · Produktion · Vertrieb",func:true},
+   {id:"f2",cx:620,y:174,w:176,h:42,lvl:"func",label:"Einkauf · Produktion · Vertrieb",func:true},
+   {id:"f3",cx:840,y:174,w:176,h:42,lvl:"func",label:"Einkauf · Produktion · Vertrieb",func:true},
+  ],
+  edges:[["gl","v"],["gl","sp1"],["gl","sp2"],["gl","sp3"],["sp1","f1"],["sp2","f2"],["sp3","f3"]]},
+];
+
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+const main=document.getElementById('main');
+EX.forEach(ex=>main.appendChild(buildExercise(ex)));
+
+function buildExercise(ex){
+  const sec=document.createElement('section');sec.className='ex';
+  const nodeById={};ex.nodes.forEach(n=>nodeById[n.id]=n);
+  const slots=ex.nodes.filter(n=>!n.fixed&&!n.func);
+  const state={}; // slotId -> label
+
+  sec.innerHTML=`<div class="eyebrow">Aufgabe <span class="pill ${ex.div?'div':''}">${ex.tag}</span></div>
+    <h2>${ex.title}</h2>
+    <div class="desc">${ex.desc}</div>
+    <p class="task"><b>Baue das Organigramm:</b> Ziehe jeden Begriff in den richtigen Kasten (Farbe zeigt nach dem Prüfen die Ebene).</p>`;
+
+  // pool
+  const pool=document.createElement('div');pool.className='pool';
+  const chips={};
+  shuffle(slots.map(s=>s.correct)).forEach((label,i)=>{
+    const c=document.createElement('div');c.className='chip';c.textContent=label;c.draggable=true;
+    c.dataset.label=label;c.dataset.inst=ex.id+'_'+i;
+    chips[c.dataset.inst]=c;
+    c.addEventListener('click',()=>selectChip(c));
+    c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text',c.dataset.inst);selected=c;});
+    pool.appendChild(c);
+  });
+  sec.appendChild(pool);
+
+  // board
+  const bw=document.createElement('div');bw.className='boardwrap';
+  const board=document.createElement('div');board.className='board';
+  board.style.width=ex.W+'px';board.style.height=ex.H+'px';
+  // connectors
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('class','conn');svg.setAttribute('viewBox',`0 0 ${ex.W} ${ex.H}`);svg.setAttribute('preserveAspectRatio','none');
+  ex.edges.forEach(([p,c])=>{
+    const P=nodeById[p],C=nodeById[c];
+    const px=P.cx,py=P.y+P.h,cxp=C.cx,cyt=C.y,midy=(py+cyt)/2;
+    [[px,py,px,midy],[px,midy,cxp,midy],[cxp,midy,cxp,cyt]].forEach(([x1,y1,x2,y2])=>{
+      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+      l.setAttribute('stroke','#9aa0bd');l.setAttribute('stroke-width','1.4');svg.appendChild(l);
+    });
+  });
+  board.appendChild(svg);
+  // nodes
+  let selected=null;
+  function selectChip(c){if(c.classList.contains('used'))return;if(selected===c){c.classList.remove('sel');selected=null;}else{if(selected)selected.classList.remove('sel');selected=c;c.classList.add('sel');}}
+  function markUsed(){Object.values(chips).forEach(c=>{const used=Object.values(state).includes(c.dataset.inst);c.classList.toggle('used',used);if(used)c.classList.remove('sel');});}
+
+  ex.nodes.forEach(n=>{
+    const el=document.createElement('div');
+    el.style.left=(n.cx-n.w/2)+'px';el.style.top=n.y+'px';el.style.width=n.w+'px';el.style.height=n.h+'px';
+    if(n.fixed){el.className='node fixed';el.textContent=n.label;}
+    else if(n.func){el.className='node func';el.textContent=n.label;}
+    else{
+      el.className='node slot';el.dataset.slot=n.id;el.textContent='';
+      el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('over');});
+      el.addEventListener('dragleave',()=>el.classList.remove('over'));
+      el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('over');const inst=e.dataTransfer.getData('text');placeInst(n.id,inst);});
+      el.addEventListener('click',()=>{
+        if(selected){placeInst(n.id,selected.dataset.inst);}
+        else if(state[n.id]){ // clear
+          delete state[n.id];el.textContent='';el.className='node slot';markUsed();clearFb();}
+      });
+    }
+    board.appendChild(el);
+    n._el=el;
+  });
+
+  function placeInst(slotId,inst){
+    const chip=chips[inst];if(!chip)return;
+    // remove this inst from any other slot
+    for(const sid in state){if(state[sid]===inst){state[sid]=undefined;delete state[sid];const sn=nodeById[sid];sn._el.textContent='';sn._el.className='node slot';}}
+    state[slotId]=inst;
+    const sn=nodeById[slotId];sn._el.textContent=chip.dataset.label;sn._el.className='node slot filled';
+    if(selected){selected.classList.remove('sel');selected=null;}
+    markUsed();clearFb();
+  }
+
+  // actions
+  const act=document.createElement('div');act.className='actions';
+  const bCheck=document.createElement('button');bCheck.className='btn primary';bCheck.textContent='Prüfen';
+  const bSolve=document.createElement('button');bSolve.className='btn ghost';bSolve.textContent='Lösung zeigen';
+  const bReset=document.createElement('button');bReset.className='btn ghost';bReset.textContent='Zurücksetzen';
+  act.append(bCheck,bSolve,bReset);
+  const fb=document.createElement('div');fb.className='fb';
+  function clearFb(){fb.textContent='';fb.className='fb';}
+
+  bCheck.addEventListener('click',()=>{
+    const filled=slots.filter(s=>state[s.id]);
+    if(filled.length<slots.length){fb.textContent='Es sind noch nicht alle Kästen belegt.';fb.className='fb no';return;}
+    // grade per group
+    const groups={};slots.forEach(s=>{(groups[s.group]=groups[s.group]||[]).push(s);});
+    let allOk=true;
+    for(const g in groups){
+      const members=groups[g];
+      const remaining=members.map(m=>m.correct);
+      members.forEach(m=>{
+        const lbl=chips[state[m.id]].dataset.label;
+        const idx=remaining.indexOf(lbl);
+        if(idx>=0){remaining.splice(idx,1);m._el.className='node slot filled ok lvl-'+m.lvl;}
+        else{m._el.className='node slot filled bad';allOk=false;}
+      });
+    }
+    fb.textContent=allOk?'Perfekt! Das Organigramm stimmt – jede Einheit steht auf der richtigen Ebene.':'Noch nicht ganz – die rot markierten Kästen stehen an der falschen Stelle. Tipp: Wer ist wem direkt unterstellt?';
+    fb.className='fb '+(allOk?'ok':'no');
+  });
+  bSolve.addEventListener('click',()=>{
+    // assign each slot its correct label
+    slots.forEach(s=>{
+      const anyInst=Object.keys(chips).find(k=>chips[k].dataset.label===s.correct);
+      state[s.id]=anyInst;
+      s._el.textContent=s.correct;s._el.className='node slot filled ok lvl-'+s.lvl;
+    });
+    // mark all chips used
+    Object.values(chips).forEach(c=>c.classList.add('used'));
+    fb.textContent='Musterlösung – Farbe zeigt die Ebene jeder Einheit.';fb.className='fb ok';
+  });
+  bReset.addEventListener('click',()=>{
+    for(const k in state)delete state[k];
+    slots.forEach(s=>{s._el.textContent='';s._el.className='node slot';});
+    Object.values(chips).forEach(c=>{c.classList.remove('used','sel');});
+    selected=null;clearFb();
+  });
+
+  bw.appendChild(board);sec.appendChild(bw);sec.appendChild(act);sec.appendChild(fb);
+  markUsed();
+  return sec;
+}
+</script>
+</body>
+</html>
